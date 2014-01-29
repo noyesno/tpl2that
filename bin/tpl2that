@@ -1,0 +1,34 @@
+#!/usr/bin/env tclsh
+#vim: syntax=tcl
+
+lappend auto_path ~/lib/tcl/tcllib
+
+package require textutil::expander
+
+textutil::expander tpl
+
+tpl setbrackets "<?" "?>"
+
+proc tpl2that {file} {
+  set fp [open $file r] ; set tpl [read $fp] ; close $fp
+  set result [tpl expand  $tpl {"<?" "?>"}]
+  
+  if [info exists ::lut(extend)] {
+    set file test/$::lut(extend)
+    set fp [open $file "r"] ; set tpl [read $fp] ; close $fp
+    set result [tpl expand  $tpl {"<?" "?>"}]
+  }
+  
+  return $result
+}
+
+#================================================================#
+# main 
+#================================================================#
+
+lassign $argv driver file
+
+source driver/$driver.tcl
+
+puts [tpl2that $file]
+
