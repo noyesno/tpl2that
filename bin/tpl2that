@@ -1,34 +1,53 @@
 #!/usr/bin/env tclsh
 #vim: syntax=tcl
 
-lappend auto_path ~/lib/tcl/tcllib
-
+package require Tcl 8.5
+package require tcllib
 package require textutil::expander
 
-textutil::expander tpl
+namespace eval tpl2that {}
 
-tpl setbrackets "<?" "?>"
+textutil::expander tpl2that::tpl
+
+;#tpl setbrackets "<?" "?>"
 
 proc tpl2that {file} {
+  array unset ::lut *
   set fp [open $file r] ; set tpl [read $fp] ; close $fp
-  set result [tpl expand  $tpl {"<?" "?>"}]
+  set result [tpl2that::tpl expand  $tpl {"<?" "?>"}]
   
   if [info exists ::lut(extend)] {
     set file test/$::lut(extend)
     set fp [open $file "r"] ; set tpl [read $fp] ; close $fp
-    set result [tpl expand  $tpl {"<?" "?>"}]
+    set result [tpl2that::tpl expand  $tpl {"<?" "?>"}]
   }
   
   return $result
 }
 
+proc tpl2that::macro {macro} {
+  set macro [string trim $macro]
+  if {[string index $macro 0] eq {$}} {
+    set macro "= [string range $macro 1 end]"
+  } else {
+    set macro [regsub -all {\$\w+} $macro {\\&}]
+  }
+  namespace eval [namespace current] $macro
+}
+
+tpl2that::tpl evalcmd tpl2that::macro
+
 #================================================================#
 # main 
 #================================================================#
 
+
 lassign $argv driver file
 
-source driver/$driver.tcl
+namespace eval tpl2that {
+  source driver/$driver.tcl
+}
+
 
 puts [tpl2that $file]
 
